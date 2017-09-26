@@ -1,0 +1,52 @@
+DOUBLE_PRECISION
+ GPU runtime is 339.911
+ CPU runtime is 1.29989e+06
+Real_t_deltatime_h
+ GPU runtime is 436.095
+ CPU runtime is 1.39544e+06
+Real_t_volo 
+ GPU runtime is 339.374
+ CPU runtime is 1.28759e+06
+Real_t_delv
+ GPU runtime is 343.456
+ CPU runtime is 1.30213e+06
+Real_t_vdov
+ GPU runtime is 347.053
+ CPU runtime is 1.30618e+06
+Real_t_arealg
+ GPU runtime is 341.602
+ CPU runtime is 1.29866e+06
+Real_t_v
+ GPU runtime is 344.151
+ CPU runtime is 1.31966e+06
+Real_t_vnew  
+ GPU runtime is 342.143
+ CPU runtime is 1.3013e+06
+Real_t_dxx 
+ GPU runtime is 342.676
+ CPU runtime is 1.30237e+06
+Real_t_dyy
+ GPU runtime is 342.282
+ CPU runtime is 1.30141e+06
+Real_t_dzz
+ GPU runtime is 342.414
+ CPU runtime is 1.30125e+06
+Real_t_x
+ GPU runtime is 552.622
+ CPU runtime is 1.71368e+06
+Real_t_volume 
+ GPU runtime is 339.211
+ CPU runtime is 1.25521e+06
+Real_t_B
+ GPU runtime is 333.744
+ CPU runtime is 1.28168e+06
+Real_t_D  
+ GPU runtime is 341.893
+ CPU runtime is 1.30217e+06
+NULL
+ GPU runtime is 338.897
+ CPU runtime is 1.29945e+06
+Real_t_x + Real_t_deltatime_h
+ GPU runtime is 550.703
+ CPU runtime is 1.70972e+06
+
