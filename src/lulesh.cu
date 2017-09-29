@@ -125,10 +125,16 @@ int CalcMonotonicQRegionForElems_kernel_blocksize = 64 ;
 int ApplyMaterialPropertiesAndUpdateVolume_kernel_blocksize = 64 ; 
 int CalcTimeConstraintsForElems_kernel_blocksize = 64 ; 
 int CalcMinDtOneBlock_blocksize = 64 ; 
-    
-double global_CalcKinematicsAndMonotonicQGradient_time_sum = 0 ;
-double global_CalcKinematicsAndMonotonicQGradient_time_milliseconds = 0 ;
-int global_CalcKinematicsAndMonotonicQGradient_time_times  = 0 ;
+   
+double* G_CKinematic_Monotonic_time = new double[3] ; 
+double* G_CVolume_Force_Elem_time = new double[3] ; 
+
+
+void global_time_pp(double* globle_value , clock_t t , float milliseconds ){
+    globle_value[0] += t ; 
+    globle_value[1] += milliseconds ; 
+    globle_value[2] += 1 ; 
+}
 //EJ end
 
 #define MAX(a, b) ( ((a) > (b)) ? (a) : (b))
@@ -1124,7 +1130,7 @@ Domain *NewDomain(char* argv[], Int_t numRanks, Index_t colLoc,
   /* initialize field data */
   Vector_h<Real_t_x> nodalMass_h(domNodes);
   Vector_h<Real_t_volo> volo_h(domElems);
-  Vector_h<Real_t> elemMass_h(domElems);
+  Vector_h<Real_t_elemMass> elemMass_h(domElems);
 
   for (Index_t i=0; i<domElems; ++i) {
      Real_t_x x_local[8], y_local[8], z_local[8] ;
@@ -1682,9 +1688,9 @@ void AddNodeForcesFromElems_kernel( Index_t numNode,
                                     const Int_t* nodeElemCount, 
                                     const Int_t* nodeElemStart, 
                                     const Index_t* nodeElemCornerList,
-                                    const Real_t* fx_elem, 
-                                    const Real_t* fy_elem, 
-                                    const Real_t* fz_elem,
+                                    const Real_t_fx_elem* fx_elem, 
+                                    const Real_t_fy_elem* fy_elem, 
+                                    const Real_t_fz_elem* fz_elem,
                                     Real_t_x* fx_node, 
                                     Real_t_x* fy_node, 
                                     Real_t_x* fz_node,
@@ -1696,7 +1702,7 @@ void AddNodeForcesFromElems_kernel( Index_t numNode,
       Index_t g_i = tid;
       Int_t count=nodeElemCount[g_i];
       Int_t start=nodeElemStart[g_i];
-      Real_t fx,fy,fz;
+      Real_t_x fx,fy,fz;
       fx=fy=fz=Real_t_x(0.0);
 
       for (int j=0;j<count;j++) 
@@ -1717,13 +1723,13 @@ void AddNodeForcesFromElems_kernel( Index_t numNode,
 static
 __device__
 __forceinline__
-void VoluDer(const Real_t x0, const Real_t x1, const Real_t x2,
-             const Real_t x3, const Real_t x4, const Real_t x5,
-             const Real_t y0, const Real_t y1, const Real_t y2,
-             const Real_t y3, const Real_t y4, const Real_t y5,
-             const Real_t z0, const Real_t z1, const Real_t z2,
-             const Real_t z3, const Real_t z4, const Real_t z5,
-             Real_t* dvdx, Real_t* dvdy, Real_t* dvdz)
+void VoluDer(const Real_t_x x0, const Real_t_x x1, const Real_t_x x2,
+             const Real_t_x x3, const Real_t_x x4, const Real_t_x x5,
+             const Real_t_x y0, const Real_t_x y1, const Real_t_x y2,
+             const Real_t_x y3, const Real_t_x y4, const Real_t_x y5,
+             const Real_t_x z0, const Real_t_x z1, const Real_t_x z2,
+             const Real_t_x z3, const Real_t_x z4, const Real_t_x z5,
+             Real_t_dvd* dvdx, Real_t_dvd* dvdy, Real_t_dvd* dvdz)
 {
    const Real_t twelfth = Real_t(1.0) / Real_t(12.0) ;
 
@@ -1750,9 +1756,9 @@ void VoluDer(const Real_t x0, const Real_t x1, const Real_t x2,
 static
 __device__
 __forceinline__
-void CalcElemVolumeDerivative(Real_t dvdx[8],
-                              Real_t dvdy[8],
-                              Real_t dvdz[8],
+void CalcElemVolumeDerivative(Real_t_dvd dvdx[8],
+                              Real_t_dvd dvdy[8],
+                              Real_t_dvd dvdz[8],
                               const Real_t_x x[8],
                               const Real_t_x y[8],
                               const Real_t_x z[8])
@@ -1794,11 +1800,11 @@ void CalcElemVolumeDerivative(Real_t dvdx[8],
 static
 __device__ 
 __forceinline__
-void CalcElemFBHourglassForce(Real_t *xd, Real_t *yd, Real_t *zd,  Real_t *hourgam0,
-                              Real_t *hourgam1, Real_t *hourgam2, Real_t *hourgam3,
-                              Real_t *hourgam4, Real_t *hourgam5, Real_t *hourgam6,
-                              Real_t *hourgam7, Real_t coefficient,
-                              Real_t *hgfx, Real_t *hgfy, Real_t *hgfz )
+void CalcElemFBHourglassForce(Real_t_dn *xd, Real_t_dn *yd, Real_t_dn *zd,  Real_t_hourg *hourgam0,
+                              Real_t_hourg *hourgam1, Real_t_hourg *hourgam2, Real_t_hourg *hourgam3,
+                              Real_t_hourg *hourgam4, Real_t_hourg *hourgam5, Real_t_hourg *hourgam6,
+                              Real_t_hourg *hourgam7, Real_t_coeff coefficient,
+                              Real_t_hg *hgfx, Real_t_hg *hgfy, Real_t_hg *hgfz )
 {
    Index_t i00=0;
    Index_t i01=1;
@@ -1979,8 +1985,8 @@ void CalcElemFBHourglassForce(Real_t *xd, Real_t *yd, Real_t *zd,  Real_t *hourg
 __device__
 __forceinline__
 void CalcHourglassModes(const Real_t_x xn[8], const Real_t_x yn[8], const Real_t_x zn[8],
-                        const Real_t dvdxn[8], const Real_t dvdyn[8], const Real_t dvdzn[8],
-                        Real_t hourgam[8][4], Real_t volinv)
+                        const Real_t_dvd dvdxn[8], const Real_t_dvd dvdyn[8], const Real_t_dvd dvdzn[8],
+                        Real_t_hourg hourgam[8][4], Real_t volinv)
 {
     Real_t hourmodx, hourmody, hourmodz;
 
@@ -2046,14 +2052,14 @@ void CalcVolumeForceForElems_kernel(
 
     const Real_t_volo* __restrict__ volo, 
     const Real_t_v* __restrict__ v,
-    const Real_t* __restrict__ p, 
-    const Real_t* __restrict__ q,
-    Real_t hourg,
+    const Real_t_p* __restrict__ p, 
+    const Real_t_q* __restrict__ q,
+    Real_t_hourg hourg,
     Index_t numElem, 
     Index_t padded_numElem, 
     const Index_t* __restrict__ nodelist,
-    const Real_t* __restrict__ ss, 
-    const Real_t* __restrict__ elemMass,
+    const Real_t_ss* __restrict__ ss, 
+    const Real_t_elemMass* __restrict__ elemMass,
     const Real_t_x* __restrict__ x,   const Real_t_x* __restrict__ y,  const Real_t_x* __restrict__  z,
     const Real_t_x* __restrict__ xd,  const Real_t_x* __restrict__ yd,  const Real_t_x* __restrict__  zd,
     //TextureObj<Real_t> x,  TextureObj<Real_t> y,  TextureObj<Real_t> z,
@@ -2061,13 +2067,13 @@ void CalcVolumeForceForElems_kernel(
     //TextureObj<Real_t>* x,  TextureObj<Real_t>* y,  TextureObj<Real_t>* z,
     //TextureObj<Real_t>* xd,  TextureObj<Real_t>* yd,  TextureObj<Real_t>* zd,
 #ifdef DOUBLE_PRECISION // For floats, use atomicAdd
-    Real_t* __restrict__ fx_elem, 
-    Real_t* __restrict__ fy_elem, 
-    Real_t* __restrict__ fz_elem,
+    Real_t_fx_elem* __restrict__ fx_elem, 
+    Real_t_fy_elem* __restrict__ fy_elem, 
+    Real_t_fz_elem* __restrict__ fz_elem,
 #else
-    Real_t* __restrict__ fx_node, 
-    Real_t* __restrict__ fy_node, 
-    Real_t* __restrict__ fz_node,
+    Real_t_x* __restrict__ fx_node, 
+    Real_t_x* __restrict__ fy_node, 
+    Real_t_x* __restrict__ fz_node,
 #endif
     Index_t* __restrict__ bad_vol,
     const Index_t num_threads)
@@ -2079,11 +2085,11 @@ void CalcVolumeForceForElems_kernel(
   *************************************************/
 
   Real_t_x xn[8],yn[8],zn[8];;
-  Real_t xdn[8],ydn[8],zdn[8];;
-  Real_t dvdxn[8],dvdyn[8],dvdzn[8];;
-  Real_t hgfx[8],hgfy[8],hgfz[8];;
-  Real_t hourgam[8][4];
-  Real_t coefficient;
+  Real_t_dn xdn[8],ydn[8],zdn[8];;
+  Real_t_dvd dvdxn[8],dvdyn[8],dvdzn[8];;
+  Real_t_hg hgfx[8],hgfy[8],hgfz[8];;
+  Real_t_hourg hourgam[8][4];
+  Real_t_coeff coefficient;
 
   int elem=blockDim.x*blockIdx.x+threadIdx.x;
   if (elem < num_threads) 
@@ -2096,9 +2102,10 @@ void CalcVolumeForceForElems_kernel(
       *bad_vol = elem; 
     }
 
-    Real_t ss1 = ss[elem];
-    Real_t mass1 = elemMass[elem];
-    Real_t sigxx = -p[elem] - q[elem];
+    Real_t_ss ss1 = ss[elem];
+    Real_t_elemMass mass1 = elemMass[elem];
+    //EJ
+    Real_t_sig sigxx = -p[elem] - q[elem];
 
     Index_t n[8];
     #pragma unroll 
@@ -2128,7 +2135,7 @@ void CalcVolumeForceForElems_kernel(
 
 
     Real_t_volume volume13 = CBRT(det);
-    coefficient = - hourg * Real_t(0.01) * ss1 * mass1 / volume13;
+    coefficient = - hourg * Real_t_hourg(0.01) * ss1 * mass1 / volume13;
 
     /*************************************************/
     /*    compute the volume derivatives             */
@@ -2615,9 +2622,9 @@ void CalcVolumeForceForElems(const Real_t hgcoef,Domain *domain)
     Index_t padded_numElem = domain->padded_numElem;
 
 #ifdef DOUBLE_PRECISION
-    Vector_d<Real_t>* fx_elem = Allocator< Vector_d<Real_t> >::allocate(padded_numElem*8);
-    Vector_d<Real_t>* fy_elem = Allocator< Vector_d<Real_t> >::allocate(padded_numElem*8);
-    Vector_d<Real_t>* fz_elem = Allocator< Vector_d<Real_t> >::allocate(padded_numElem*8);
+    Vector_d<Real_t_fx_elem>* fx_elem = Allocator< Vector_d<Real_t_fx_elem> >::allocate(padded_numElem*8);
+    Vector_d<Real_t_fy_elem>* fy_elem = Allocator< Vector_d<Real_t_fy_elem> >::allocate(padded_numElem*8);
+    Vector_d<Real_t_fz_elem>* fz_elem = Allocator< Vector_d<Real_t_fz_elem> >::allocate(padded_numElem*8);
 #else
     thrust::fill(domain->fx.begin(),domain->fx.end(),0.);
     thrust::fill(domain->fy.begin(),domain->fy.end(),0.);
@@ -2634,7 +2641,10 @@ void CalcVolumeForceForElems(const Real_t hgcoef,Domain *domain)
     //EJ end 
     int dimGrid = PAD_DIV(num_threads,block_size);
 
-    bool hourg_gt_zero = hgcoef > Real_t(0.0);
+    bool hourg_gt_zero = hgcoef > Real_t_hourg(0.0);
+    //EJ
+    EJ_Time_Start ; 
+
     if (hourg_gt_zero)
     {
       CalcVolumeForceForElems_kernel<true> <<<dimGrid,block_size>>>
@@ -2686,6 +2696,10 @@ void CalcVolumeForceForElems(const Real_t hgcoef,Domain *domain)
       );
     }
 
+    EJ_Time_End ;
+    global_time_pp(G_CVolume_Force_Elem_time , t , milliseconds ); 
+
+    // EJ 
 #ifdef DOUBLE_PRECISION
     num_threads = domain->numNode;
 
@@ -2713,9 +2727,9 @@ void CalcVolumeForceForElems(const Real_t hgcoef,Domain *domain)
 //    cudaDeviceSynchronize();
 //    cudaCheckError();
 
-    Allocator<Vector_d<Real_t> >::free(fx_elem,padded_numElem*8);
-    Allocator<Vector_d<Real_t> >::free(fy_elem,padded_numElem*8);
-    Allocator<Vector_d<Real_t> >::free(fz_elem,padded_numElem*8);
+    Allocator<Vector_d<Real_t_fx_elem> >::free(fx_elem,padded_numElem*8);
+    Allocator<Vector_d<Real_t_fy_elem> >::free(fy_elem,padded_numElem*8);
+    Allocator<Vector_d<Real_t_fz_elem> >::free(fz_elem,padded_numElem*8);
 
 #endif // ifdef DOUBLE_PRECISION
    return ;
@@ -3519,14 +3533,17 @@ void CalcKinematicsAndMonotonicQGradient(Domain *domain)
         block_size = Assigned_block_size ; 
     //EJend
     int dimGrid = PAD_DIV(num_threads,block_size);
+    
     //EJ - timing
-    clock_t t = clock() ; 
+    /*clock_t t = clock() ; 
     timeval EJstart;
     gettimeofday(&EJstart, NULL) ;
     cudaEvent_t EJJstart, EJJstop;
     cudaEventCreate(&EJJstart);
     cudaEventCreate(&EJJstop);
-    cudaEventRecord(EJJstart);
+    cudaEventRecord(EJJstart);*/
+    
+    EJ_Time_Start ;  
 
     CalcKinematicsAndMonotonicQGradient_kernel<<<dimGrid,block_size>>>
     (  numElem,padded_numElem, domain->deltatime_h, 
@@ -3550,8 +3567,11 @@ void CalcKinematicsAndMonotonicQGradient(Domain *domain)
        domain->bad_vol_h,
        num_threads  
     );
-    cudaEventRecord(EJJstop);
     
+    EJ_Time_End ;
+    global_time_pp(G_CKinematic_Monotonic_time , t , milliseconds ) ;
+    /*
+    cudaEventRecord(EJJstop);
     cudaEventSynchronize(EJJstop);
     float milliseconds = 0;
     cudaEventElapsedTime(&milliseconds, EJJstart, EJJstop);
@@ -3567,6 +3587,8 @@ void CalcKinematicsAndMonotonicQGradient(Domain *domain)
     global_CalcKinematicsAndMonotonicQGradient_time_sum += t ;
     global_CalcKinematicsAndMonotonicQGradient_time_milliseconds += milliseconds ;
     global_CalcKinematicsAndMonotonicQGradient_time_times += 1 ;
+    */
+
     //EJ end
     //cudaDeviceSynchronize();
     //cudaCheckError();
@@ -3604,9 +3626,9 @@ void CalcMonotonicQRegionForElems_kernel(
     Real_t_delx_xi *delx_xi,
     Real_t_delx_eta *delx_eta,
     Real_t_delx_zeta *delx_zeta,
-    Real_t_vdov *vdov,Real_t *elemMass,Real_t_volo *volo,Real_t_vnew *vnew,
+    Real_t_vdov *vdov,Real_t_elemMass *elemMass,Real_t_volo *volo,Real_t_vnew *vnew,
     Real_t *qq, Real_t *ql,
-    Real_t *q,
+    Real_t_q *q,
     Real_t qstop,
     Index_t* bad_q 
     )
@@ -3827,7 +3849,7 @@ __device__ __forceinline__
 void CalcSoundSpeedForElems_device(Real_t& vnewc, Real_t rho0, Real_t &enewc,
                             Real_t &pnewc, Real_t &pbvc,
                             Real_t &bvc, Real_t ss4o3, Index_t nz,
-                            Real_t *ss, Index_t iz)
+                            Real_t_ss *ss, Index_t iz)
 {
   Real_t ssTmp = (pbvc * enewc + vnewc * vnewc *
              bvc * pnewc) / rho0;
@@ -4035,10 +4057,10 @@ void ApplyMaterialPropertiesAndUpdateVolume_kernel(
 //        const Index_t* __restrict__ regElemlist,
         Real_t* __restrict__ e,
         Real_t_delv* __restrict__ delv,
-        Real_t* __restrict__ p,
-        Real_t* __restrict__ q,
+        Real_t_p* __restrict__ p,
+        Real_t_q* __restrict__ q,
         Real_t ss4o3,
-        Real_t* __restrict__ ss,
+        Real_t_ss* __restrict__ ss,
         Real_t v_cut,
         Index_t* __restrict__ bad_vol, 
         const Int_t cost,
@@ -4263,7 +4285,7 @@ void CalcTimeConstraintsForElems_kernel(
     Real_t qqc2, 
     Real_t dvovmax,
     Index_t *matElemlist,
-    Real_t *ss,
+    Real_t_ss *ss,
     Real_t_vdov *vdov,
     Real_t_arealg *arealg,
     Real_t *dev_mindtcourant,
@@ -4772,11 +4794,11 @@ void VerifyAndWriteFinalOutput(Real_t elapsed_time,
    }
    //EJ
    std::ofstream myfile;
-   myfile.open ("output_precision_W_results.csv", std::ios::app);
+   myfile.open ("output.csv", std::ios::app);
    //myfile.write("%d,%d,%10.2f,%12.6e \n",K_number,Assigned_block_size,elapsed_time,e_zero);
    //myfile << K_number << "," << Assigned_block_size << "," << elapsed_time << "," << e_zero << "\n" ;
-   myfile << " GPU runtime is ," << global_CalcKinematicsAndMonotonicQGradient_time_milliseconds << "," ;  
-   myfile << " CPU runtime is ," << global_CalcKinematicsAndMonotonicQGradient_time_sum << "," ;
+   myfile << " GPU_CKM runtime is ," << G_CKinematic_Monotonic_time[0] << "," ;  
+   myfile << " CPU_CKM runtime is ," << G_CKinematic_Monotonic_time[1] << "," ;
    myfile << " MaxAbsDiff     ," <<    MaxAbsDiff   << ",";
    myfile << " TotalAbsDiff   ," <<    TotalAbsDiff << ",";
    myfile << " MaxRelDiff     ," <<    MaxRelDiff   << ",";
@@ -4979,9 +5001,11 @@ int main(int argc, char *argv[])
    MPI_Finalize() ;
 #endif
   
-  printf( "EJ GPU time = %f \n" , global_CalcKinematicsAndMonotonicQGradient_time_milliseconds );
-  printf( "EJ CPU clocks = %f \n" , global_CalcKinematicsAndMonotonicQGradient_time_sum );
-  printf( "EJ total cycles = %d \n" , global_CalcKinematicsAndMonotonicQGradient_time_times );
+  printf( "EJ GPU_CKM time = %f \n" , G_CKinematic_Monotonic_time[0] );
+  printf( "EJ CPU_CKM clocks = %f \n" , G_CKinematic_Monotonic_time[1]);
+  printf( "EJ GPU_CVF time = %f \n" , G_CVolume_Force_Elem_time[0] );
+  printf( "EJ CPU_CVF clocks = %f \n" , G_CVolume_Force_Elem_time[1]);
+  printf( "EJ total cycles = %f \n" , G_CKinematic_Monotonic_time[2]);
   return 0 ;
 }
 

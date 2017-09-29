@@ -1,24 +1,39 @@
 #ifndef TYPES
 #define TYPES
+  
+#define DOUBLE_PRECISION 1
 
-
-#define DOUBLE_PRECISION 0
-
-typedef float Real_t_deltatime_h ; 
-typedef float Real_t_volo        ;
-typedef float Real_t_delv        ; 
-typedef float Real_t_vdov        ; 
-typedef float Real_t_arealg      ; 
-typedef float Real_t_v           ; 
-typedef float Real_t_vnew        ; 
-typedef float Real_t_dxx         ; 
-typedef float Real_t_dyy         ; 
-typedef float Real_t_dzz         ;
-typedef float Real_t_x           ; 
-typedef float Real_t_volume      ; 
-typedef float Real_t_B           ; 
-typedef float Real_t_D           ; 
+typedef float  Real_t_deltatime_h ; //CalcKine_kerenl, 
+typedef float  Real_t_volo        ; //CalcKine_kerenl, CalcVolumeFor_kernel 
+typedef float  Real_t_delv        ; //CalcKine_kerenl, 
+typedef float  Real_t_vdov        ; //CalcKine_kerenl, 
+typedef float  Real_t_arealg      ; //CalcKine_kerenl, 
+typedef float  Real_t_v           ; //CalcKine_kerenl, CalcVolumeFor_kernel 
+typedef float  Real_t_vnew        ; //CalcKine_kerenl, 
+typedef float  Real_t_dxx         ; //CalcKine_kerenl, 
+typedef float  Real_t_dyy         ; //CalcKine_kerenl, 
+typedef float  Real_t_dzz         ; //CalcKine_kerenl, 
+typedef double  Real_t_x           ; //CalcKine_kerenl,  CalcVolumeFor_kernel 
+typedef float  Real_t_volume      ; //CalcKine_kerenl, 
+typedef float  Real_t_B           ; //CalcKine_kerenl, 
+typedef float  Real_t_D           ; //CalcKine_kerenl, 
 //***********************************
+typedef float Real_t_p            ; //CalcVolumeFor_kernel 
+typedef float Real_t_q            ; //CalcVolumeFor_kernel 
+typedef float Real_t_ss           ; //CalcVolumeFor_kernel 
+typedef float Real_t_elemMass     ; //CalcVolumeFor_kernel 
+typedef float Real_t_hourg        ; //CalcVolumeFor_kernel 
+typedef float Real_t_fx_elem      ; //CalcVolumeFor_kernel 
+typedef float Real_t_fy_elem      ; //CalcVolumeFor_kernel 
+typedef float Real_t_fz_elem      ; //CalcVolumeFor_kernel 
+typedef float Real_t_dn           ; //CalcVolumeFor_kernel 
+typedef float Real_t_dvd          ; //CalcVolumeFor_kernel
+typedef float Real_t_hg           ; //CalcVolumeFor_kernel 
+typedef float Real_t_coeff        ; //CalcVolumeFor_kernel 
+typedef float Real_t_sig          ; //CalcVolumeFor_kernel
+//***********************************
+
+
 typedef Real_t_volume Real_t_detJ        ; 
 typedef Real_t_x Real_t_delv_xi   ; 
 typedef Real_t_x Real_t_delv_eta  ; 
@@ -129,3 +144,23 @@ Real_t_dvovmax dvovmax ;
 Real_t_refdens refdens ;    */
 
 #endif
+
+#ifndef EJ_Time_Start
+#define EJ_Time_Start\
+    clock_t t = clock() ;\
+    timeval EJstart;\
+    gettimeofday(&EJstart, NULL) ;\
+    cudaEvent_t EJJstart, EJJstop;\
+    cudaEventCreate(&EJJstart);\
+    cudaEventCreate(&EJJstop);\
+    cudaEventRecord(EJJstart);
+#endif
+#ifndef EJ_Time_End
+#define EJ_Time_End\
+    cudaEventRecord(EJJstop);\
+    cudaEventSynchronize(EJJstop);\
+    float milliseconds = 0;\
+    cudaEventElapsedTime(&milliseconds, EJJstart, EJJstop);\
+    t = clock() - t ;
+#endif
+

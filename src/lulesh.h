@@ -66,9 +66,9 @@ public:
 
   Vector_d<Real_t> e ;            /* energy */
 
-  Vector_d<Real_t> p ;            /* pressure */
+  Vector_d<Real_t_p> p ;            /* pressure */
 
-  Vector_d<Real_t> q ;            /* q */
+  Vector_d<Real_t_q> q ;            /* q */
   Vector_d<Real_t> ql ;           /* linear term for q */
   Vector_d<Real_t> qq ;           /* quadratic term for q */
 
@@ -80,9 +80,9 @@ public:
 
   Vector_d<Real_t_arealg> arealg ;       /* char length of an element */
   
-  Vector_d<Real_t> ss ;           /* "sound speed" */
+  Vector_d<Real_t_ss> ss ;           /* "sound speed" */
 
-  Vector_d<Real_t> elemMass ;     /* mass */
+  Vector_d<Real_t_elemMass> elemMass ;     /* mass */
 
   Vector_d<Real_t_vnew>* vnew ;         /* new relative volume -- temporary */
 
