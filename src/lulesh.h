@@ -64,13 +64,13 @@ public:
 
   Vector_d<Int_t> elemBC ;        /* elem face symm/free-surf flag */
 
-  Vector_d<Real_t> e ;            /* energy */
+  Vector_d<Real_t_e> e ;            /* energy */
 
   Vector_d<Real_t_p> p ;            /* pressure */
 
   Vector_d<Real_t_q> q ;            /* q */
-  Vector_d<Real_t> ql ;           /* linear term for q */
-  Vector_d<Real_t> qq ;           /* quadratic term for q */
+  Vector_d<Real_t_ql> ql ;           /* linear term for q */
+  Vector_d<Real_t_qq> qq ;           /* quadratic term for q */
 
   Vector_d<Real_t_v> v ;            /* relative volume */
 
@@ -192,20 +192,20 @@ public:
   Real_t qstop ;                /* excessive q indicator */
   Real_t monoq_max_slope ;
   Real_t monoq_limiter_mult ;   
-  Real_t e_cut ;                /* energy tolerance */
-  Real_t p_cut ;                /* pressure tolerance */
-  Real_t ss4o3 ;
-  Real_t q_cut ;                /* q tolerance */
-  Real_t v_cut ;                /* relative volume tolerance */
+  Real_t_e_cut e_cut ;                /* energy tolerance */
+  Real_t_p_cut p_cut ;                /* pressure tolerance */
+  Real_t_ss4o3 ss4o3 ;
+  Real_t_q_cut q_cut ;                /* q tolerance */
+  Real_t_v_cut v_cut ;                /* relative volume tolerance */
   Real_t qlc_monoq ;            /* linear term coef for q */
   Real_t qqc_monoq ;            /* quadratic term coef for q */
   Real_t qqc ;
-  Real_t eosvmax ;
-  Real_t eosvmin ;
-  Real_t pmin ;                 /* pressure floor */
-  Real_t emin ;                 /* energy floor */
+  Real_t_eosvmax eosvmax ;
+  Real_t_eosvmin eosvmin ;
+  Real_t_pmin pmin ;                 /* pressure floor */
+  Real_t_emin emin ;                 /* energy floor */
   Real_t dvovmax ;              /* maximum allowable volume change */
-  Real_t refdens ;              /* reference density */
+  Real_t_refdens refdens ;              /* reference density */
 
    Index_t m_colLoc ;
    Index_t m_rowLoc ;

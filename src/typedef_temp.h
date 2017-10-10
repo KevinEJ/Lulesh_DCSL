@@ -3,49 +3,49 @@
   
 #define DOUBLE_PRECISION 1
 
-typedef float Real_t_deltatime_h ; //CalcKine_kerenl, 
-typedef float Real_t_volo        ; //CalcKine_kerenl, CalcVolumeFor_kernel 
-typedef float Real_t_delv        ; //CalcKine_kerenl, ApplyMPAndUV_kernel 
-typedef float Real_t_vdov        ; //CalcKine_kerenl, 
-typedef float Real_t_arealg      ; //CalcKine_kerenl, 
-typedef float Real_t_v           ; //CalcKine_kerenl, CalcVolumeFor_kernel ApplyMPAndUV_kernel 
+typedef double Real_t_deltatime_h ; //CalcKine_kerenl, 
+typedef double Real_t_volo        ; //CalcKine_kerenl, CalcVolumeFor_kernel 
+typedef double Real_t_delv        ; //CalcKine_kerenl, ApplyMPAndUV_kernel 
+typedef double Real_t_vdov        ; //CalcKine_kerenl, 
+typedef double Real_t_arealg      ; //CalcKine_kerenl, 
+typedef double Real_t_v           ; //CalcKine_kerenl, CalcVolumeFor_kernel ApplyMPAndUV_kernel 
 typedef double Real_t_dxx         ; //CalcKine_kerenl, 
-typedef float Real_t_dyy         ; //CalcKine_kerenl, 
-typedef float Real_t_dzz         ; //CalcKine_kerenl, 
-typedef float Real_t_x           ; //CalcKine_kerenl,  CalcVolumeFor_kernel 
+typedef double Real_t_dyy         ; //CalcKine_kerenl, 
+typedef double Real_t_dzz         ; //CalcKine_kerenl, 
+typedef double Real_t_x           ; //CalcKine_kerenl,  CalcVolumeFor_kernel 
 typedef double Real_t_volume      ; //CalcKine_kerenl,  CalcVolumeFor_kernel 
 typedef double Real_t_B           ; //CalcKine_kerenl, 
 typedef double Real_t_D           ; //CalcKine_kerenl, 
 //***********************************
-typedef float Real_t_p            ; //CalcVolumeFor_kernel ApplyMPAndUV_kernel 
-typedef float Real_t_q            ; //CalcVolumeFor_kernel ApplyMPAndUV_kernel 
-typedef float Real_t_ss           ; //CalcVolumeFor_kernel ApplyMPAndUV_kernel 
-typedef float Real_t_elemMass     ; //CalcVolumeFor_kernel 
+typedef double Real_t_p            ; //CalcVolumeFor_kernel ApplyMPAndUV_kernel 
+typedef double Real_t_q            ; //CalcVolumeFor_kernel ApplyMPAndUV_kernel 
+typedef double Real_t_ss           ; //CalcVolumeFor_kernel ApplyMPAndUV_kernel 
+typedef double Real_t_elemMass     ; //CalcVolumeFor_kernel 
 typedef double Real_t_hourg        ; //CalcVolumeFor_kernel 
-typedef float Real_t_fx_elem      ; //CalcVolumeFor_kernel 
-typedef float Real_t_fy_elem      ; //CalcVolumeFor_kernel 
-typedef float Real_t_fz_elem      ; //CalcVolumeFor_kernel 
+typedef double Real_t_fx_elem      ; //CalcVolumeFor_kernel 
+typedef double Real_t_fy_elem      ; //CalcVolumeFor_kernel 
+typedef double Real_t_fz_elem      ; //CalcVolumeFor_kernel 
 typedef double Real_t_dn           ; //CalcVolumeFor_kernel 
 typedef double Real_t_dvd          ; //CalcVolumeFor_kernel
 typedef double Real_t_hg           ; //CalcVolumeFor_kernel 
-typedef float Real_t_coeff        ; //CalcVolumeFor_kernel 
-typedef float Real_t_sig          ; //CalcVolumeFor_kernel
+typedef double Real_t_coeff        ; //CalcVolumeFor_kernel 
+typedef double Real_t_sig          ; //CalcVolumeFor_kernel
 //***********************************
-typedef float Real_t_refdens     ; //ApplyMate_kernel
-typedef float Real_t_emin        ; //ApplyMate_kerne;
+typedef double Real_t_refdens     ; //ApplyMate_kernel
+typedef double Real_t_emin        ; //ApplyMate_kerne;
 typedef double Real_t_pmin        ; //ApplyMate_kerne; 
 typedef double Real_t_e_cut       ; //ApplyMate_kerne; 
-typedef float Real_t_p_cut       ; //ApplyMate_kerne; 
-typedef float Real_t_q_cut       ; //ApplyMate_kerne; 
+typedef double Real_t_p_cut       ; //ApplyMate_kerne; 
+typedef double Real_t_q_cut       ; //ApplyMate_kerne; 
 typedef double Real_t_v_cut       ; //ApplyMate_kerne; 
 typedef double Real_t_ql          ; //ApplyMate_kerne; 
-typedef float Real_t_qq          ; //ApplyMate_kerne; 
-typedef float Real_t_e           ; //ApplyMate_kerne; 
-typedef float Real_t_ss4o3       ; //ApplyMate_kerne;
-typedef float Real_t_comp        ; //ApplyMate_kerne;
+typedef double Real_t_qq          ; //ApplyMate_kerne; 
+typedef double Real_t_e           ; //ApplyMate_kerne; 
+typedef double Real_t_ss4o3       ; //ApplyMate_kerne;
+typedef double Real_t_comp        ; //ApplyMate_kerne;
 typedef double Real_t_work        ; //ApplyMate_kerne;
-typedef float Real_t_ssc         ; //ApplyMate_kerne;           
-typedef float Real_t_qtilde      ; //ApplyMate_kerne;           
+typedef double Real_t_ssc         ; //ApplyMate_kerne;           
+typedef double Real_t_qtilde      ; //ApplyMate_kerne;           
 
 typedef Real_t_volume Real_t_detJ ; 
 typedef Real_t_x Real_t_delv_xi   ; 

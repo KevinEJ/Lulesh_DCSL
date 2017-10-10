@@ -70,6 +70,11 @@ Additional BSD Notice
 #include <sstream>
 #include <fstream>
 
+//EJ
+#include <limits>
+typedef std::numeric_limits< double > dbl;
+//EJ end
+
 #include <util.h>
 #include <sm_utils.inl>
 #include <cuda.h>
@@ -128,6 +133,7 @@ int CalcMinDtOneBlock_blocksize = 64 ;
    
 double* G_CKinematic_Monotonic_time = new double[3] ; 
 double* G_CVolume_Force_Elem_time = new double[3] ; 
+double* G_AMaterial_Pro_Up_Vol_time = new double[3] ; 
 
 
 void global_time_pp(double* globle_value , clock_t t , float milliseconds ){
@@ -3344,17 +3350,9 @@ __launch_bounds__(64,8) // 64-bit
 __launch_bounds__(64,16) // 32-bit
 #endif*/
 void CalcKinematicsAndMonotonicQGradient_kernel(
-    //Index_t numElem, Index_t padded_numElem, const Real_t dt,
     Index_t numElem, Index_t padded_numElem, const Real_t_deltatime_h dt,
-    //const Index_t* __restrict__ nodelist, const Real_t* __restrict__ volo, const Real_t* __restrict__ v,
-    const Index_t* __restrict__ nodelist, const Real_t_volo* __restrict__ volo, const Real_t_v* __restrict__ v,
+   const Index_t* __restrict__ nodelist, const Real_t_volo* __restrict__ volo, const Real_t_v* __restrict__ v,
 
-    /*const Real_t* __restrict__ x, 
-    const Real_t* __restrict__ y, 
-    const Real_t* __restrict__ z,
-    const Real_t* __restrict__ xd, 
-    const Real_t* __restrict__ yd, 
-    const Real_t* __restrict__ zd,*/
     const Real_t_x* __restrict__ x, 
     const Real_t_x* __restrict__ y, 
     const Real_t_x* __restrict__ z,
@@ -3627,7 +3625,7 @@ void CalcMonotonicQRegionForElems_kernel(
     Real_t_delx_eta *delx_eta,
     Real_t_delx_zeta *delx_zeta,
     Real_t_vdov *vdov,Real_t_elemMass *elemMass,Real_t_volo *volo,Real_t_vnew *vnew,
-    Real_t *qq, Real_t *ql,
+    Real_t_qq *qq, Real_t_ql *ql,
     Real_t_q *q,
     Real_t qstop,
     Index_t* bad_q 
@@ -3816,26 +3814,26 @@ void CalcMonotonicQRegionForElems(Domain *domain)
 static 
 __device__ __forceinline__
 void CalcPressureForElems_device(
-                      Real_t& p_new, Real_t& bvc,
-                      Real_t& pbvc, Real_t& e_old,
-                      Real_t& compression, Real_t& vnewc,
-                      Real_t pmin,
-                      Real_t p_cut, Real_t eosvmax)
+                      Real_t_p& p_new, Real_t_v& bvc,
+                      Real_t_v& pbvc, Real_t_e& e_old,
+                      Real_t_comp& compression, Real_t_v& vnewc,
+                      Real_t_pmin pmin,
+                      Real_t_p_cut p_cut, Real_t_eosvmax eosvmax)
 {
       
-      Real_t c1s = Real_t(2.0)/Real_t(3.0); 
-      Real_t p_temp = p_new;
+      Real_t_v c1s = Real_t_v(2.0)/Real_t_v(3.0); 
+      Real_t_p p_temp = p_new;
 
-      bvc = c1s * (compression + Real_t(1.));
+      bvc = c1s * (compression + Real_t_comp(1.));
       pbvc = c1s;
 
       p_temp = bvc * e_old ;
 
       if ( FABS(p_temp) <  p_cut )
-        p_temp = Real_t(0.0) ;
+        p_temp = Real_t_p(0.0) ;
 
       if ( vnewc >= eosvmax ) /* impossible condition here? */
-        p_temp = Real_t(0.0) ;
+        p_temp = Real_t_p(0.0) ;
 
       if (p_temp < pmin)
         p_temp = pmin ;
@@ -3846,9 +3844,9 @@ void CalcPressureForElems_device(
 
 static
 __device__ __forceinline__
-void CalcSoundSpeedForElems_device(Real_t& vnewc, Real_t rho0, Real_t &enewc,
-                            Real_t &pnewc, Real_t &pbvc,
-                            Real_t &bvc, Real_t ss4o3, Index_t nz,
+void CalcSoundSpeedForElems_device(Real_t_v& vnewc, Real_t_refdens rho0, Real_t_e &enewc,
+                            Real_t_p &pnewc, Real_t_v &pbvc,
+                            Real_t_v &bvc, Real_t_ss4o3 ss4o3, Index_t nz,
                             Real_t_ss *ss, Index_t iz)
 {
   Real_t ssTmp = (pbvc * enewc + vnewc * vnewc *
@@ -3866,29 +3864,29 @@ static
 __device__
 __forceinline__ 
 void ApplyMaterialPropertiesForElems_device(
-    Real_t& eosvmin, Real_t& eosvmax,
+    Real_t_eosvmin& eosvmin, Real_t_eosvmax& eosvmax,
     Real_t_vnew* vnew, Real_t_v *v,
-    Real_t& vnewc, Index_t* bad_vol, Index_t zn)
+    Real_t_vnew& vnewc, Index_t* bad_vol, Index_t zn)
 {
   vnewc = vnew[zn] ;
 
-  if (eosvmin != Real_t(0.)) {
+  if (eosvmin != Real_t_eosvmin(0.)) {
       if (vnewc < eosvmin)
           vnewc = eosvmin ;
   }
 
-  if (eosvmax != Real_t(0.)) {
+  if (eosvmax != Real_t_eosvmax(0.)) {
       if (vnewc > eosvmax)
           vnewc = eosvmax ;
   }
 
   // Now check for valid volume
-  Real_t vc = v[zn];
-  if (eosvmin != Real_t(0.)) {
+  Real_t_v vc = v[zn];
+  if (eosvmin != Real_t_eosvmin(0.)) {
      if (vc < eosvmin)
         vc = eosvmin ;
   }
-  if (eosvmax != Real_t(0.)) {
+  if (eosvmax != Real_t_eosvmax(0.)) {
      if (vc > eosvmax)
         vc = eosvmax ;
   }
@@ -3901,7 +3899,7 @@ void ApplyMaterialPropertiesForElems_device(
 static
 __device__
 __forceinline__
-void UpdateVolumesForElems_device(Index_t numElem, Real_t& v_cut,
+void UpdateVolumesForElems_device(Index_t numElem, Real_t_v_cut& v_cut,
                                   Real_t_vnew *vnew,
                                   Real_t_v *v,
                                   int i)
@@ -3918,22 +3916,22 @@ void UpdateVolumesForElems_device(Index_t numElem, Real_t& v_cut,
 static
 __device__
 __forceinline__
-void CalcEnergyForElems_device(Real_t& p_new, Real_t& e_new, Real_t& q_new,
-                            Real_t& bvc, Real_t& pbvc,
-                            Real_t& p_old, Real_t& e_old, Real_t& q_old,
-                            Real_t& compression, Real_t& compHalfStep,
-                            Real_t& vnewc, Real_t& work, Real_t& delvc, Real_t pmin,
-                            Real_t p_cut, Real_t e_cut, Real_t q_cut, Real_t emin,
-                            Real_t& qq, Real_t& ql,
-                            Real_t& rho0,
-                            Real_t& eosvmax,
+void CalcEnergyForElems_device(Real_t_p& p_new, Real_t_e& e_new, Real_t_q& q_new,
+                            Real_t_v& bvc, Real_t_v& pbvc,
+                            Real_t_p& p_old, Real_t_e& e_old, Real_t_q& q_old,
+                            Real_t_comp& compression, Real_t_comp& compHalfStep,
+                            Real_t_v& vnewc, Real_t_work& work, Real_t_delv& delvc, Real_t_pmin pmin,
+                            Real_t_p_cut p_cut, Real_t_e_cut e_cut, Real_t_q_cut q_cut, Real_t_emin emin,
+                            Real_t_qq& qq, Real_t_ql& ql,
+                            Real_t_refdens& rho0,
+                            Real_t_eosvmax& eosvmax,
                             Index_t length)
 {
    const Real_t sixth = Real_t(1.0) / Real_t(6.0) ;
-   Real_t pHalfStep;
+   Real_t_p pHalfStep;
 
-   e_new = e_old - Real_t(0.5) * delvc * (p_old + q_old)
-      + Real_t(0.5) * work;
+   e_new = e_old - Real_t_e(0.5) * delvc * (p_old + q_old)
+      + Real_t_work(0.5) * work;
 
    if (e_new  < emin ) {
       e_new = emin ;
@@ -3942,17 +3940,17 @@ void CalcEnergyForElems_device(Real_t& p_new, Real_t& e_new, Real_t& q_new,
    CalcPressureForElems_device(pHalfStep, bvc, pbvc, e_new, compHalfStep, vnewc,
                    pmin, p_cut, eosvmax);
 
-   Real_t vhalf = Real_t(1.) / (Real_t(1.) + compHalfStep) ;
+   Real_t_comp vhalf = Real_t_comp(1.) / (Real_t_comp(1.) + compHalfStep) ;
 
-   if ( delvc > Real_t(0.) ) {
-      q_new = Real_t(0.) ;
+   if ( delvc > Real_t_delv(0.) ) {
+      q_new = Real_t_q(0.) ;
    }
    else {
-      Real_t ssc = ( pbvc * e_new
+      Real_t_ssc ssc = ( pbvc * e_new
               + vhalf * vhalf * bvc * pHalfStep ) / rho0 ;
 
-      if ( ssc <= Real_t(.1111111e-36) ) {
-         ssc =Real_t(.3333333e-18) ;
+      if ( ssc <= Real_t_ssc(.1111111e-36) ) {
+         ssc =Real_t_ssc(.3333333e-18) ;
       } else {
          ssc = SQRT(ssc) ;
       }
@@ -3960,14 +3958,14 @@ void CalcEnergyForElems_device(Real_t& p_new, Real_t& e_new, Real_t& q_new,
       q_new = (ssc*ql + qq) ;
    }
 
-   e_new = e_new + Real_t(0.5) * delvc
-      * (  Real_t(3.0)*(p_old     + q_old)
-           - Real_t(4.0)*(pHalfStep + q_new)) ;
+   e_new = e_new + Real_t_delv(0.5) * delvc
+      * (  Real_t_p(3.0)*(p_old     + q_old)
+           - Real_t_q(4.0)*(pHalfStep + q_new)) ;
 
-   e_new += Real_t(0.5) * work;
+   e_new += Real_t_work(0.5) * work;
 
    if (FABS(e_new) < e_cut) {
-      e_new = Real_t(0.)  ;
+      e_new = Real_t_e(0.)  ;
    }
    if (     e_new  < emin ) {
       e_new = emin ;
@@ -3976,17 +3974,17 @@ void CalcEnergyForElems_device(Real_t& p_new, Real_t& e_new, Real_t& q_new,
    CalcPressureForElems_device(p_new, bvc, pbvc, e_new, compression, vnewc,
                    pmin, p_cut, eosvmax);
 
-   Real_t q_tilde ;
+   Real_t_qtilde q_tilde ;
 
-   if (delvc > Real_t(0.)) {
+   if (delvc > Real_t_delv(0.)) {
       q_tilde = Real_t(0.) ;
    }
    else {
-      Real_t ssc = ( pbvc * e_new
+      Real_t_ssc ssc = ( pbvc * e_new
               + vnewc * vnewc * bvc * p_new ) / rho0 ;
 
-      if ( ssc <= Real_t(.1111111e-36) ) {
-         ssc = Real_t(.3333333e-18) ;
+      if ( ssc <= Real_t_ssc(.1111111e-36) ) {
+         ssc = Real_t_ssc(.3333333e-18) ;
       } else {
          ssc = SQRT(ssc) ;
       }
@@ -3994,12 +3992,12 @@ void CalcEnergyForElems_device(Real_t& p_new, Real_t& e_new, Real_t& q_new,
       q_tilde = (ssc*ql + qq) ;
    }
 
-   e_new = e_new - (  Real_t(7.0)*(p_old     + q_old)
-                            - Real_t(8.0)*(pHalfStep + q_new)
+   e_new = e_new - (  Real_t_p(7.0)*(p_old     + q_old)
+                            - Real_t_q(8.0)*(pHalfStep + q_new)
                             + (p_new + q_tilde)) * delvc*sixth ;
 
    if (FABS(e_new) < e_cut) {
-      e_new = Real_t(0.)  ;
+      e_new = Real_t_e(0.)  ;
    }
    if ( e_new  < emin ) {
       e_new = emin ;
@@ -4009,19 +4007,19 @@ void CalcEnergyForElems_device(Real_t& p_new, Real_t& e_new, Real_t& q_new,
                    pmin, p_cut, eosvmax);
 
 
-   if ( delvc <= Real_t(0.) ) {
-      Real_t ssc = ( pbvc * e_new
+   if ( delvc <= Real_t_delv(0.) ) {
+      Real_t_ssc ssc = ( pbvc * e_new
               + vnewc * vnewc * bvc * p_new ) / rho0 ;
 
-      if ( ssc <= Real_t(.1111111e-36) ) {
-         ssc = Real_t(.3333333e-18) ;
+      if ( ssc <= Real_t_ssc(.1111111e-36) ) {
+         ssc = Real_t_ssc(.3333333e-18) ;
       } else {
          ssc = SQRT(ssc) ;
       }
 
       q_new = (ssc*ql + qq) ;
 
-      if (FABS(q_new) < q_cut) q_new = Real_t(0.) ;
+      if (FABS(q_new) < q_cut) q_new = Real_t_q(0.) ;
    }
 
    return ;
@@ -4041,27 +4039,27 @@ Index_t giveMyRegion(const Index_t* regCSR,const Index_t i, const Index_t numReg
 __global__
 void ApplyMaterialPropertiesAndUpdateVolume_kernel(
         Index_t length,
-        Real_t rho0,
-        Real_t e_cut,
-        Real_t emin,
-        Real_t* __restrict__ ql,
-        Real_t* __restrict__ qq,
+        Real_t_refdens rho0,
+        Real_t_e_cut e_cut,
+        Real_t_emin emin,
+        Real_t_ql* __restrict__ ql,
+        Real_t_qq* __restrict__ qq,
         Real_t_vnew* __restrict__ vnew,
         Real_t_v* __restrict__ v,
-        Real_t pmin,
-        Real_t p_cut,
-        Real_t q_cut,
-        Real_t eosvmin,
-        Real_t eosvmax,
+        Real_t_pmin pmin,
+        Real_t_p_cut p_cut,
+        Real_t_q_cut q_cut,
+        Real_t_eosvmin eosvmin,
+        Real_t_eosvmax eosvmax,
         Index_t* __restrict__ regElemlist,
 //        const Index_t* __restrict__ regElemlist,
-        Real_t* __restrict__ e,
+        Real_t_e* __restrict__ e,
         Real_t_delv* __restrict__ delv,
         Real_t_p* __restrict__ p,
         Real_t_q* __restrict__ q,
-        Real_t ss4o3,
+        Real_t_ss4o3 ss4o3,
         Real_t_ss* __restrict__ ss,
-        Real_t v_cut,
+        Real_t_v_cut v_cut,
         Index_t* __restrict__ bad_vol, 
         const Int_t cost,
         const Index_t* regCSR,
@@ -4070,11 +4068,17 @@ void ApplyMaterialPropertiesAndUpdateVolume_kernel(
 )
 {
 
-  Real_t e_old, delvc, p_old, q_old, e_temp, delvc_temp, p_temp, q_temp;
-  Real_t compression, compHalfStep;
-  Real_t qq_old, ql_old, qq_temp, ql_temp, work;
-  Real_t p_new, e_new, q_new;
-  Real_t bvc, pbvc, vnewc;
+  Real_t_e     e_old , e_new; //, delvc, p_old, q_old,// e_temp, delvc_temp, p_temp, q_temp;
+  Real_t_delv  delvc ;
+  Real_t_p     p_old , p_new;
+  Real_t_q     q_old , q_new;
+  
+  Real_t_comp compression, compHalfStep;
+  Real_t_qq qq_old ;//, qq_temp ; 
+  Real_t_ql ql_old ;//, ql_temp ; 
+  Real_t_work work;
+  //Real_t p_new, e_new, q_new;
+  Real_t_v bvc, pbvc, vnewc;
 
   Index_t i=blockDim.x*blockIdx.x + threadIdx.x;
 
@@ -4089,12 +4093,12 @@ void ApplyMaterialPropertiesAndUpdateVolume_kernel(
   Index_t region = giveMyRegion(regCSR,i,numReg);  
   Index_t rep = regReps[region];
     
-    e_temp = e[zidx];
-    p_temp = p[zidx];
-    q_temp = q[zidx];
-    qq_temp = qq[zidx] ;
-    ql_temp = ql[zidx] ;
-    delvc_temp = delv[zidx];
+    Real_t_e    e_temp = e[zidx];
+    Real_t_p    p_temp = p[zidx];
+    Real_t_q    q_temp = q[zidx];
+    Real_t_qq   qq_temp = qq[zidx] ;
+    Real_t_ql   ql_temp = ql[zidx] ;
+    Real_t_delv delvc_temp = delv[zidx];
 
   for(int r=0; r < rep; r++)
   {
@@ -4105,23 +4109,23 @@ void ApplyMaterialPropertiesAndUpdateVolume_kernel(
     qq_old = qq_temp;
     ql_old = ql_temp;
     delvc = delvc_temp;
-    work = Real_t(0.);
+    work = Real_t_work(0.);
 
-    Real_t vchalf ;
-    compression = Real_t(1.) / vnewc - Real_t(1.);
+    Real_t_v vchalf ;
+    compression = Real_t_v(1.) / vnewc - Real_t_v(1.);
     vchalf = vnewc - delvc * Real_t(.5);
-    compHalfStep = Real_t(1.) / vchalf - Real_t(1.);
+    compHalfStep = Real_t_v(1.) / vchalf - Real_t_v(1.);
 
-    if ( eosvmin != Real_t(0.) ) {
+    if ( eosvmin != Real_t_eosvmin(0.) ) {
         if (vnewc <= eosvmin) { /* impossible due to calling func? */
             compHalfStep = compression ;
         }
     }
     if ( eosvmax != Real_t(0.) ) {
         if (vnewc >= eosvmax) { /* impossible due to calling func? */
-            p_old        = Real_t(0.) ;
-            compression  = Real_t(0.) ;
-            compHalfStep = Real_t(0.) ;
+            p_old        = Real_t_p(0.) ;
+            compression  = Real_t_comp(0.) ;
+            compHalfStep = Real_t_comp(0.) ;
         }
     }
 
@@ -4164,7 +4168,9 @@ void ApplyMaterialPropertiesAndUpdateVolume(Domain *domain)
         dimBlock = Assigned_block_size ; 
     //EJend
     Index_t dimGrid = PAD_DIV(length,dimBlock);
-    
+    //EJ
+    EJ_Time_Start;
+
     ApplyMaterialPropertiesAndUpdateVolume_kernel<<<dimGrid,dimBlock>>>
         (length,
          domain->refdens,
@@ -4193,7 +4199,10 @@ void ApplyMaterialPropertiesAndUpdateVolume(Domain *domain)
 	 domain->regReps.raw(),
 	 domain->numReg
          );
-
+    
+    EJ_Time_End; 
+    global_time_pp(G_AMaterial_Pro_Up_Vol_time , t , milliseconds ); 
+    //EJ end
     //cudaDeviceSynchronize();
     //cudaCheckError();
   }
@@ -4747,9 +4756,9 @@ void VerifyAndWriteFinalOutput(Real_t elapsed_time,
    Real_t grindTime2 = ((elapsed_time*1e6)/its)/(nx*nx*nx*numRanks);
 
    // Copy Energy back to Host 
-   Real_t e_zero;
-   Real_t* d_ezero_ptr = locDom.e.raw() + locDom.octantCorner; /* octant corner supposed to be 0 */
-   cudaMemcpy(&e_zero, d_ezero_ptr, sizeof(Real_t), cudaMemcpyDeviceToHost);
+   Real_t_e e_zero;
+   Real_t_e* d_ezero_ptr = locDom.e.raw() + locDom.octantCorner; /* octant corner supposed to be 0 */
+   cudaMemcpy(&e_zero, d_ezero_ptr, sizeof(Real_t_e), cudaMemcpyDeviceToHost);
 
    printf("Run completed:  \n");
    printf("   Problem size        =  %i \n",    nx);
@@ -4797,13 +4806,24 @@ void VerifyAndWriteFinalOutput(Real_t elapsed_time,
    myfile.open ("output.csv", std::ios::app);
    //myfile.write("%d,%d,%10.2f,%12.6e \n",K_number,Assigned_block_size,elapsed_time,e_zero);
    //myfile << K_number << "," << Assigned_block_size << "," << elapsed_time << "," << e_zero << "\n" ;
-   myfile << " GPU_CKM runtime is ," << G_CKinematic_Monotonic_time[0] << "," ;  
+   myfile << ",GPU_CKM runtime is ," << G_CKinematic_Monotonic_time[0] << "," ;  
    myfile << " CPU_CKM runtime is ," << G_CKinematic_Monotonic_time[1] << "," ;
-   myfile << " MaxAbsDiff     ," <<    MaxAbsDiff   << ",";
-   myfile << " TotalAbsDiff   ," <<    TotalAbsDiff << ",";
-   myfile << " MaxRelDiff     ," <<    MaxRelDiff   << ",";
+   myfile << " GPU_CVF runtime is ," << G_CVolume_Force_Elem_time[0] << "," ;  
+   myfile << " CPU_CVF runtime is ," << G_CVolume_Force_Elem_time[1] << "," ;
+   myfile << " GPU_APU runtime is ," << G_AMaterial_Pro_Up_Vol_time[0] << "," ;  
+   myfile << " CPU_APU runtime is ," << G_AMaterial_Pro_Up_Vol_time[1] << "," ;
+   //myfile << " MaxAbsDiff     ," <<    MaxAbsDiff   << ",";
+   //myfile << " TotalAbsDiff   ," <<    TotalAbsDiff << ",";
+   //myfile << " MaxRelDiff     ," <<    MaxRelDiff   << ",";
+   myfile << "CPU_total_runtime=," <<  elapsed_time << "," ; 
+   myfile << "FinalOriginEnergy=," <<  e_zero   << ",";
    myfile << "\n" ;
    myfile.close();
+   
+   std::ofstream tempfile;
+   tempfile.open ("temp_output.csv", std::ios::out);
+   tempfile << std::setprecision( dbl::max_digits10 ) << elapsed_time << "," <<  std::setprecision(dbl::max_digits10) << e_zero   << "\n";
+   tempfile.close();
    //EJEnd
    return ;
 }
@@ -4833,17 +4853,6 @@ int main(int argc, char *argv[])
     printf( "usage ./lulesh -s elems -f Kernel_number Block_size \n" ) ;
     exit( LFileError ) ;
   }
- /*enum KERNEL_NAME {"None",
-                   "AddNodeForcesFromElems_kernel",
-                   "CalcVolumeForceForElems_kernel",
-                   "CalcAccelerationForNodes_kernel",
-                   "ApplyAccelerationBoundaryConditionsForNodes_kernel",
-                   "CalcPositionAndVelocityForNodes_kernel",
-                   "CalcKinematicsAndMonotonicQGradient_kernel",
-                   "CalcMonotonicQRegionForElems_kernel",
-                   "ApplyMaterialPropertiesAndUpdateVolume_kernel"}*/
-  //switch(argv[4]){
-  //KERNEL_NAME func = "None" ;
   switch( atoi(argv[4])){
     //case "AddNodeForcesFromElems_kernel": Manual_AddNodeForcesFromElems_kernel_blocksize = true ; break ; 
     case 0: printf("default block_size \n " ) ; break ; 
@@ -5005,6 +5014,8 @@ int main(int argc, char *argv[])
   printf( "EJ CPU_CKM clocks = %f \n" , G_CKinematic_Monotonic_time[1]);
   printf( "EJ GPU_CVF time = %f \n" , G_CVolume_Force_Elem_time[0] );
   printf( "EJ CPU_CVF clocks = %f \n" , G_CVolume_Force_Elem_time[1]);
+  printf( "EJ GPU_APU time = %f \n" , G_AMaterial_Pro_Up_Vol_time[0] );
+  printf( "EJ CPU_APU clocks = %f \n" , G_AMaterial_Pro_Up_Vol_time[1]);
   printf( "EJ total cycles = %f \n" , G_CKinematic_Monotonic_time[2]);
   return 0 ;
 }
